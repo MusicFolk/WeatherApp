@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather App - Login/Register</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              skydeep: "#0f172a",
+              sea: "#0ea5e9",
+              sand: "#f59e0b",
+            },
+            fontFamily: {
+              display: ["Poppins", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body
+    data-page="auth"
+    class="min-h-screen bg-gradient-to-br from-skydeep via-slate-900 to-sky-800 font-display text-white"
+  >
+    <main class="mx-auto flex min-h-screen max-w-5xl items-center px-4 py-8">
+      <section class="grid w-full grid-cols-1 gap-6 rounded-2xl bg-white/10 p-6 backdrop-blur md:grid-cols-2 md:p-8">
+        <div class="space-y-4">
+          <p class="text-sm uppercase tracking-[0.2em] text-sky-200">Weather App with Favorites</p>
+          <h1 class="text-3xl font-bold leading-tight md:text-4xl">Track weather and save your favorite cities.</h1>
+          <p class="text-slate-100/90">
+            Register an account, search live weather, and keep a personalized favorites list.
+          </p>
+          <div class="rounded-xl border border-white/20 bg-white/10 p-4 text-sm text-slate-100">
+            <p>After login, you will be redirected to the weather dashboard.</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="flex gap-2">
+            <button id="showLogin" class="w-1/2 rounded-lg bg-sea px-4 py-2 font-semibold">Login</button>
+            <button id="showRegister" class="w-1/2 rounded-lg bg-white/20 px-4 py-2 font-semibold">Register</button>
+          </div>
+
+          <form id="authForm" class="space-y-3 rounded-xl bg-slate-950/40 p-5">
+            <h2 id="formTitle" class="text-xl font-semibold">Login</h2>
+            <input id="email" type="email" placeholder="Email" class="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 outline-none ring-sea focus:ring" required />
+            <input id="password" type="password" placeholder="Password (min 6 chars)" class="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 outline-none ring-sea focus:ring" required />
+            <button type="submit" id="submitBtn" class="w-full rounded-lg bg-sand px-4 py-2 font-semibold text-slate-900">Login</button>
+            <p id="authMessage" class="min-h-6 text-sm"></p>
+          </form>
+
+          <p class="text-xs text-slate-200">
+            API endpoints: POST /register, POST /login, GET /weather, POST/GET/DELETE /favorites.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

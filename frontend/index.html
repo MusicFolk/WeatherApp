@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather App - Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              cloud: "#f1f5f9",
+              ocean: "#0369a1",
+              ember: "#f97316",
+            },
+            fontFamily: {
+              display: ["Manrope", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body data-page="weather" class="min-h-screen bg-[radial-gradient(circle_at_top,_#bae6fd,_#e2e8f0_45%,_#cbd5e1)] font-display text-slate-900">
+    <main class="mx-auto max-w-6xl px-4 py-8">
+      <header class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/80 p-4 shadow-sm">
+        <h1 class="text-2xl font-extrabold">Weather Dashboard</h1>
+        <nav class="flex gap-2">
+          <a href="/favorites.html" class="rounded-lg bg-ocean px-4 py-2 text-sm font-semibold text-white">Favorites</a>
+          <button id="logoutBtn" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white">Logout</button>
+        </nav>
+      </header>
+
+      <section class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div class="rounded-2xl bg-white/90 p-4 shadow">
+          <h2 class="mb-3 text-lg font-bold">Search Weather</h2>
+          <form id="weatherForm" class="space-y-3">
+            <input id="cityInput" type="text" placeholder="City (e.g. Vilnius)" class="w-full rounded-lg border border-slate-300 px-3 py-2" required />
+            <input id="countryInput" type="text" placeholder="Country (optional)" class="w-full rounded-lg border border-slate-300 px-3 py-2" />
+            <button type="submit" class="w-full rounded-lg bg-ember px-4 py-2 font-semibold text-white">Get Weather</button>
+          </form>
+          <p id="weatherMessage" class="mt-2 min-h-5 text-sm"></p>
+        </div>
+
+        <div id="weatherCard" class="rounded-2xl bg-white/90 p-4 shadow md:col-span-1 lg:col-span-2">
+          <h2 class="mb-2 text-lg font-bold">Current Conditions</h2>
+          <p class="text-sm text-slate-500">Search a city to see weather details.</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather App - Favorites</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              pine: "#14532d",
+              mint: "#bbf7d0",
+              ink: "#0f172a",
+            },
+            fontFamily: {
+              display: ["Space Grotesk", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body data-page="favorites" class="min-h-screen bg-gradient-to-b from-mint to-emerald-100 font-display text-ink">
+    <main class="mx-auto max-w-6xl px-4 py-8">
+      <header class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow">
+        <h1 class="text-2xl font-bold">Your Favorites</h1>
+        <nav class="flex gap-2">
+          <a href="/index.html" class="rounded-lg bg-pine px-4 py-2 text-sm font-semibold text-white">Back to Search</a>
+          <button id="logoutBtn" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white">Logout</button>
+        </nav>
+      </header>
+
+      <section>
+        <p id="favoritesMessage" class="mb-3 min-h-5 text-sm"></p>
+        <div id="favoritesGrid" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"></div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
