@@ -25,82 +25,136 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequest'
+              $ref: "#/components/schemas/RegisterRequest"
             example:
               email: user@example.com
               password: secret123
       responses:
-        '201':
+        "201":
           description: User registered successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RegisterResponse'
-        '400':
-          description: Invalid input
+                $ref: "#/components/schemas/RegisterResponse"
+        "400":
+          description: Invalid input (e.g., "Email and password are required", "Invalid email format", or "Password must be at least 6 characters")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Email and password are required"
+        "409":
           description: Email already registered
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Server error
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Email already registered"
+        "500":
+          description: Server error (e.g., "Failed to register user" or "Server error while registering")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Failed to register user"
 
   /api/login:
     post:
       tags:
         - Auth
-      summary: Log in a user and receive a JWT token
+      summary: Log in a user and receive an httpOnly session cookie
+      description: |
+        Authenticates user credentials and sets an httpOnly cookie containing a JWT token.
+        The cookie is automatically sent with subsequent requests and cannot be accessed by JavaScript.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: "#/components/schemas/LoginRequest"
             example:
               email: user@example.com
               password: secret123
       responses:
-        '200':
-          description: Login successful
+        "200":
+          description: Login successful. An httpOnly cookie is automatically set.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
-        '400':
-          description: Invalid input
+                $ref: "#/components/schemas/LoginResponse"
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: authToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; SameSite=lax; Max-Age=86400; Path=/
+              description: httpOnly session cookie valid for 24 hours
+        "400":
+          description: Invalid input ("Email and password are required")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Email and password are required"
+        "401":
           description: Invalid credentials
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Invalid credentials"
+        "500":
+          description: Server error (e.g., "Failed to login" or "Server error while logging in")
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Failed to login"
+
+  /api/logout:
+    post:
+      tags:
+        - Auth
+      summary: Log out and clear the session cookie
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Logout successful. Session cookie has been cleared.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logout successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: authToken=; HttpOnly; SameSite=lax; Max-Age=0; Path=/
+              description: Clears the httpOnly session cookie
+        "500":
           description: Server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/weather:
     get:
       tags:
         - Weather
-      summary: Get current weather for a city
-      description: Fetches weather data from WeatherAPI through the backend only.
+      summary: Get current weather for a city (authentication required)
+      description: Fetches weather data from WeatherAPI. Requires valid session cookie.
+      security:
+        - cookieAuth: []
       parameters:
         - name: city
           in: query
@@ -117,137 +171,230 @@ paths:
             type: string
           example: Lithuania
       responses:
-        '200':
+        "200":
           description: Weather data returned successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WeatherResponse'
-        '400':
-          description: Missing city parameter
+                $ref: "#/components/schemas/WeatherResponse"
+        "400":
+          description: Missing city parameter ("Query parameter 'city' is required")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Query parameter 'city' is required"
+        "401":
+          description: Authentication required or session expired ("Authentication required" or "Invalid or expired token")
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: City not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '502':
-          description: Weather API failure
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "No matching location found"
+        "502":
+          description: Weather API failure ("Failed to fetch weather data" or external API error message)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Server misconfiguration or internal error
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Failed to fetch weather data"
+        "500":
+          description: Server misconfiguration or internal error ("Weather API key is not configured")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Weather API key is not configured"
+
+  /api/weather/forecast:
+    get:
+      tags:
+        - Weather
+      summary: Get weather forecast for a city (authentication required)
+      description: Fetches multi-day weather forecast data from WeatherAPI. Requires valid session cookie.
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: city
+          in: query
+          required: true
+          description: City name to look up
+          schema:
+            type: string
+          example: Vilnius
+        - name: country
+          in: query
+          required: false
+          description: Optional country name to narrow the search
+          schema:
+            type: string
+          example: Lithuania
+        - name: days
+          in: query
+          required: false
+          description: Number of forecast days (1-10). Defaults to 5.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 5
+          example: 5
+      responses:
+        "200":
+          description: Forecast data returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastResponse"
+        "400":
+          description: Invalid query parameter (e.g., "Query parameter 'city' is required" or "Query parameter 'days' must be an integer between 1 and 10")
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Query parameter 'days' must be an integer between 1 and 10"
+        "401":
+          description: Authentication required or session expired ("Authentication required" or "Invalid or expired token")
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Authentication required"
+        "404":
+          description: City not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "No matching location found"
+        "502":
+          description: Weather API failure ("Failed to fetch weather data" or external API error message)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Failed to fetch weather data"
+        "500":
+          description: Server misconfiguration or internal error ("Weather API key is not configured")
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Weather API key is not configured"
 
   /api/favorites:
     get:
       tags:
         - Favorites
       summary: List the authenticated user's favorites
+      description: Returns all favorite cities for the authenticated user via session cookie.
       security:
-        - bearerAuth: []
-      parameters:
-        - name: Authorization
-          in: header
-          required: true
-          description: Bearer token in the format `Bearer <token>`
-          schema:
-            type: string
-          example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        - cookieAuth: []
       responses:
-        '200':
+        "200":
           description: Favorites returned successfully
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Favorite'
-        '401':
-          description: Missing or invalid token
+                  $ref: "#/components/schemas/Favorite"
+        "401":
+          description: Authentication required or session expired ("Authentication required" or "Invalid or expired token")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Server error
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Authentication required"
+        "500":
+          description: Server error ("Failed to load favorites")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Failed to load favorites"
 
     post:
       tags:
         - Favorites
       summary: Add a city to favorites
+      description: Adds a city to the authenticated user's favorites via session cookie.
       security:
-        - bearerAuth: []
-      parameters:
-        - name: Authorization
-          in: header
-          required: true
-          description: Bearer token in the format `Bearer <token>`
-          schema:
-            type: string
-          example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        - cookieAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FavoriteCreateRequest'
+              $ref: "#/components/schemas/FavoriteCreateRequest"
             example:
               city: Vilnius
       responses:
-        '201':
+        "201":
           description: Favorite saved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Favorite'
-        '400':
-          description: Invalid input
+                $ref: "#/components/schemas/Favorite"
+        "400":
+          description: Invalid input ("City is required and must be at least 2 characters")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Missing or invalid token
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "City is required and must be at least 2 characters"
+        "401":
+          description: Authentication required or session expired ("Authentication required" or "Invalid or expired token")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Server error
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Authentication required"
+        "409":
+          description: City already in favorites ("City is already in favorites")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "City is already in favorites"
+        "500":
+          description: Server error ("Failed to save favorite")
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Failed to save favorite"
 
   /api/favorites/{id}:
     delete:
       tags:
         - Favorites
       summary: Delete one favorite by id
+      description: Deletes a favorite city for the authenticated user via session cookie.
       security:
-        - bearerAuth: []
+        - cookieAuth: []
       parameters:
-        - name: Authorization
-          in: header
-          required: true
-          description: Bearer token in the format `Bearer <token>`
-          schema:
-            type: string
-          example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         - name: id
           in: path
           required: true
@@ -257,7 +404,7 @@ paths:
             minimum: 1
           example: 1
       responses:
-        '200':
+        "200":
           description: Favorite deleted successfully
           content:
             application/json:
@@ -267,37 +414,46 @@ paths:
                   message:
                     type: string
                     example: Favorite deleted
-        '400':
-          description: Invalid favorite id
+        "400":
+          description: Invalid favorite id ("Invalid favorite id")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Missing or invalid token
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Invalid favorite id"
+        "401":
+          description: Authentication required or session expired ("Authentication required" or "Invalid or expired token")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Favorite not found
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Authentication required"
+        "404":
+          description: Favorite not found ("Favorite not found")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Server error
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Favorite not found"
+        "500":
+          description: Server error ("Failed to delete favorite")
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Failed to delete favorite"
 
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: authToken
+      description: httpOnly session cookie containing a signed JWT token
 
   schemas:
     RegisterRequest:
@@ -342,9 +498,10 @@ components:
     LoginResponse:
       type: object
       properties:
-        token:
+        message:
           type: string
-          description: JWT access token
+          example: Login successful
+          description: Session cookie (authToken) has been set automatically
 
     WeatherResponse:
       type: object
@@ -375,6 +532,39 @@ components:
               type: integer
             windKph:
               type: number
+
+    ForecastDay:
+      type: object
+      properties:
+        date:
+          type: string
+          example: "2026-04-22"
+        maxTempC:
+          type: number
+          example: 17.4
+        minTempC:
+          type: number
+          example: 7.2
+        condition:
+          type: string
+          example: Partly cloudy
+        icon:
+          type: string
+          example: //cdn.weatherapi.com/weather/64x64/day/116.png
+        chanceOfRain:
+          type: integer
+          example: 35
+
+    ForecastResponse:
+      type: object
+      properties:
+        city:
+          type: string
+          example: Vilnius
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/ForecastDay"
 
     FavoriteCreateRequest:
       type: object
