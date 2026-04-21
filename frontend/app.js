@@ -1,11 +1,7 @@
-const tokenKey = "weatherAppToken";
 let currentFavorites = [];
 let currentWeatherPayload = null;
 let currentWeatherCity = "";
-
-function getToken() {
-  return localStorage.getItem(tokenKey);
-}
+let isAuthenticated = false;
 
 function setMessage(elementId, text, isError = false) {
   const el = document.getElementById(elementId);
@@ -13,11 +9,6 @@ function setMessage(elementId, text, isError = false) {
 
   el.textContent = text;
   el.className = `min-h-5 text-sm ${isError ? "text-red-600" : "text-green-700"}`;
-}
-
-function authHeader() {
-  const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 function normalizeCity(city) {
@@ -30,16 +21,35 @@ function getCityFromQuery() {
 
 function isCityAlreadyFavorite(city) {
   const normalizedCity = normalizeCity(city);
-  return currentFavorites.some((item) => normalizeCity(item.city) === normalizedCity);
+  return currentFavorites.some(
+    (item) => normalizeCity(item.city) === normalizedCity,
+  );
 }
 
-function logout() {
-  localStorage.removeItem(tokenKey);
-  window.location.href = "/login";
+function isAuthError(error) {
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("auth") ||
+    message.includes("token") ||
+    message.includes("expired")
+  );
+}
+
+async function logout() {
+  try {
+    await request("/api/logout", { method: "POST" });
+  } catch (error) {
+    // Always redirect even if the server session was already invalid.
+  }
+
+  window.location.href = "/";
 }
 
 async function request(url, options = {}) {
-  const response = await fetch(url, options);
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    ...options,
+  });
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -51,12 +61,21 @@ async function request(url, options = {}) {
 
 async function loadFavoritesState() {
   try {
-    currentFavorites = await request("/api/favorites", {
-      headers: authHeader(),
-    });
+    currentFavorites = await request("/api/favorites");
+    isAuthenticated = true;
   } catch (error) {
     currentFavorites = [];
+    isAuthenticated = !isAuthError(error);
   }
+}
+
+function updateWeatherAuthActions() {
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (!loginBtn || !logoutBtn) return;
+
+  loginBtn.classList.toggle("hidden", isAuthenticated);
+  logoutBtn.classList.toggle("hidden", !isAuthenticated);
 }
 
 function initAuthPage() {
@@ -100,19 +119,13 @@ function initAuthPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         });
-
-        setMessage("authMessage", "Registration successful. You can now login.");
-        switchMode("login");
-        return;
       }
 
-      const result = await request("/api/login", {
+      await request("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
-      localStorage.setItem(tokenKey, result.token);
       window.location.href = "/weather";
     } catch (error) {
       setMessage("authMessage", error.message, true);
@@ -158,29 +171,69 @@ function renderWeatherCard(payload, city) {
     try {
       await request("/api/favorites", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeader(),
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ city }),
       });
       currentFavorites.push({ city });
       setMessage("weatherMessage", "City added to favorites.");
       renderWeatherCard(currentWeatherPayload, currentWeatherCity);
     } catch (error) {
-      setMessage("weatherMessage", error.message, true);
-      if (error.message.toLowerCase().includes("token")) {
+      if (isAuthError(error)) {
         logout();
       }
+      setMessage("weatherMessage", error.message, true);
     }
   });
 }
 
-function initWeatherPage() {
-  if (!getToken()) {
-    window.location.href = "/login";
+function renderForecast(days) {
+  const forecastSection = document.getElementById("forecastSection");
+  const forecastGrid = document.getElementById("forecastGrid");
+  if (!forecastSection || !forecastGrid) return;
+
+  if (!Array.isArray(days) || days.length === 0) {
+    forecastSection.classList.add("hidden");
+    forecastGrid.innerHTML = "";
     return;
   }
+
+  forecastSection.classList.remove("hidden");
+  forecastGrid.innerHTML = days
+    .map((day) => {
+      const iconUrl = day.icon.startsWith("//")
+        ? `https:${day.icon}`
+        : day.icon;
+      const dayLabel = new Date(`${day.date}T00:00:00`).toLocaleDateString(
+        undefined,
+        {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        },
+      );
+
+      return `
+      <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <p class="text-sm font-semibold text-slate-700">${dayLabel}</p>
+        <img src="${iconUrl}" alt="Forecast icon" class="mt-2 h-10 w-10" />
+        <p class="mt-2 text-sm text-slate-700">${day.condition}</p>
+        <p class="mt-1 text-sm font-semibold text-slate-900">${Math.round(day.maxTempC)}C / ${Math.round(day.minTempC)}C</p>
+        <p class="mt-1 text-xs text-slate-600">Rain chance: ${day.chanceOfRain}%</p>
+      </article>
+    `;
+    })
+    .join("");
+}
+
+function initWeatherPage() {
+  updateWeatherAuthActions();
+
+  document.getElementById("loginBtn")?.addEventListener("click", (event) => {
+    if (isAuthenticated) {
+      event.preventDefault();
+      return;
+    }
+  });
 
   document.getElementById("logoutBtn")?.addEventListener("click", logout);
 
@@ -207,8 +260,16 @@ function initWeatherPage() {
       history.replaceState(null, "", `/weather?${params.toString()}`);
       const weather = await request(`/api/weather?${params.toString()}`);
       renderWeatherCard(weather, city);
+      const forecast = await request(
+        `/api/weather/forecast?${params.toString()}&days=5`,
+      );
+      renderForecast(forecast.days || []);
       setMessage("weatherMessage", "Weather loaded.");
     } catch (error) {
+      renderForecast([]);
+      if (isAuthError(error)) {
+        logout();
+      }
       setMessage("weatherMessage", error.message, true);
     }
   });
@@ -218,6 +279,7 @@ function initWeatherPage() {
 
 async function initializeWeatherPage(weatherForm) {
   await loadFavoritesState();
+  updateWeatherAuthActions();
 
   const cityFromQuery = getCityFromQuery();
   if (!cityFromQuery) {
@@ -237,7 +299,8 @@ function renderFavorites(items) {
   if (!grid) return;
 
   if (!items.length) {
-    grid.innerHTML = '<p class="rounded-xl bg-white p-4 shadow">No favorites yet. Add cities from the search page.</p>';
+    grid.innerHTML =
+      '<p class="rounded-xl bg-white p-4 shadow">No favorites yet. Add cities from the search page.</p>';
     return;
   }
 
@@ -261,15 +324,14 @@ function renderFavorites(items) {
       try {
         await request(`/api/favorites/${id}`, {
           method: "DELETE",
-          headers: authHeader(),
         });
         setMessage("favoritesMessage", "Favorite removed.");
         await loadFavorites();
       } catch (error) {
-        setMessage("favoritesMessage", error.message, true);
-        if (error.message.toLowerCase().includes("token")) {
+        if (isAuthError(error)) {
           logout();
         }
+        setMessage("favoritesMessage", error.message, true);
       }
     });
   });
@@ -277,25 +339,18 @@ function renderFavorites(items) {
 
 async function loadFavorites() {
   try {
-    currentFavorites = await request("/api/favorites", {
-      headers: authHeader(),
-    });
+    currentFavorites = await request("/api/favorites");
     renderFavorites(currentFavorites);
     setMessage("favoritesMessage", "Favorites loaded.");
   } catch (error) {
-    setMessage("favoritesMessage", error.message, true);
-    if (error.message.toLowerCase().includes("token")) {
+    if (isAuthError(error)) {
       logout();
     }
+    setMessage("favoritesMessage", error.message, true);
   }
 }
 
 function initFavoritesPage() {
-  if (!getToken()) {
-    window.location.href = "/login";
-    return;
-  }
-
   document.getElementById("logoutBtn")?.addEventListener("click", logout);
   loadFavorites();
 }

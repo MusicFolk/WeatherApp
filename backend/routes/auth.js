@@ -6,6 +6,16 @@ const db = require("../db");
 const router = express.Router();
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function getAuthCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 24 * 60 * 60 * 1000,
+    path: "/",
+  };
+}
+
 router.post("/register", async (req, res) => {
   const { email, password } = req.body;
 
@@ -18,7 +28,9 @@ router.post("/register", async (req, res) => {
   }
 
   if (password.length < 6) {
-    return res.status(400).json({ error: "Password must be at least 6 characters" });
+    return res
+      .status(400)
+      .json({ error: "Password must be at least 6 characters" });
   }
 
   try {
@@ -78,12 +90,24 @@ router.post("/login", (req, res) => {
           { expiresIn: "1d" },
         );
 
-        return res.json({ token });
+        res.cookie("authToken", token, getAuthCookieOptions());
+        return res.json({ message: "Login successful" });
       } catch (error) {
         return res.status(500).json({ error: "Server error while logging in" });
       }
     },
   );
+});
+
+router.post("/logout", (req, res) => {
+  res.clearCookie("authToken", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+
+  return res.json({ message: "Logout successful" });
 });
 
 module.exports = router;

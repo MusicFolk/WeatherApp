@@ -1,7 +1,9 @@
-require("dotenv").config({ path: require("path").join(__dirname, "..", ".env") });
+require("dotenv").config({
+  path: require("path").join(__dirname, "..", ".env"),
+});
 const path = require("path");
 const express = require("express");
-const cors = require("cors");
+const cookieParser = require("cookie-parser");
 
 require("./db");
 
@@ -13,12 +15,14 @@ const authMiddleware = require("./middleware/auth");
 const app = express();
 const PORT = process.env.PORT;
 
-app.use(cors());
+app.use(cookieParser());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "..", "frontend")));
+app.use(
+  express.static(path.join(__dirname, "..", "frontend"), { index: false }),
+);
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "frontend", "login.html"));
+  res.sendFile(path.join(__dirname, "..", "frontend", "index.html"));
 });
 
 app.get("/login", (req, res) => {
@@ -29,7 +33,7 @@ app.get("/weather", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "frontend", "index.html"));
 });
 
-app.get("/favorites", (req, res) => {
+app.get("/favorites", authMiddleware, (req, res) => {
   res.sendFile(path.join(__dirname, "..", "frontend", "favorites.html"));
 });
 
