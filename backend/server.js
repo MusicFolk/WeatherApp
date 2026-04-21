@@ -21,9 +21,21 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "frontend", "login.html"));
 });
 
-app.use(authRoutes);
-app.use(weatherRoutes);
-app.use(authMiddleware, favoritesRoutes);
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "frontend", "login.html"));
+});
+
+app.get("/weather", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "frontend", "index.html"));
+});
+
+app.get("/favorites", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "frontend", "favorites.html"));
+});
+
+app.use("/api", authRoutes);
+app.use("/api", weatherRoutes);
+app.use("/api", authMiddleware, favoritesRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });

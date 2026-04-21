@@ -66,35 +66,35 @@ npm start
 
 ### Public
 
-- `POST /register`
+- `POST /api/register`
   - Body: `{ "email": "user@example.com", "password": "secret123" }`
 
-- `POST /login`
+- `POST /api/login`
   - Body: `{ "email": "user@example.com", "password": "secret123" }`
   - Returns: `{ "token": "..." }`
 
-- `GET /weather?city=Vilnius&country=Lithuania`
+- `GET /api/weather?city=Vilnius&country=Lithuania`
   - Query parameters:
     - `city` (required)
     - `country` (optional)
 
 ### Protected (Bearer token required)
 
-- `POST /favorites`
+- `POST /api/favorites`
   - Headers: `Authorization: Bearer <token>`
   - Body: `{ "city": "Vilnius" }`
 
-- `GET /favorites`
+- `GET /api/favorites`
   - Headers: `Authorization: Bearer <token>`
 
-- `DELETE /favorites/:id`
+- `DELETE /api/favorites/:id`
   - Headers: `Authorization: Bearer <token>`
   - Path parameter: `id`
 
 ## Parameter Types Covered
 
-- Query: `/weather?city=...&country=...`
-- Path: `/favorites/:id`
+- Query: `/api/weather?city=...&country=...`
+- Path: `/api/favorites/:id`
 - Headers: `Authorization: Bearer <token>`
 - Body: JSON payload in POST routes
 
