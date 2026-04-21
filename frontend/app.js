@@ -35,7 +35,7 @@ function isCityAlreadyFavorite(city) {
 
 function logout() {
   localStorage.removeItem(tokenKey);
-  window.location.href = "/login.html";
+  window.location.href = "/login";
 }
 
 async function request(url, options = {}) {
@@ -51,7 +51,7 @@ async function request(url, options = {}) {
 
 async function loadFavoritesState() {
   try {
-    currentFavorites = await request("/favorites", {
+    currentFavorites = await request("/api/favorites", {
       headers: authHeader(),
     });
   } catch (error) {
@@ -95,7 +95,7 @@ function initAuthPage() {
 
     try {
       if (mode === "register") {
-        await request("/register", {
+        await request("/api/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
@@ -106,14 +106,14 @@ function initAuthPage() {
         return;
       }
 
-      const result = await request("/login", {
+      const result = await request("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       localStorage.setItem(tokenKey, result.token);
-      window.location.href = "/index.html";
+      window.location.href = "/weather";
     } catch (error) {
       setMessage("authMessage", error.message, true);
     }
@@ -156,7 +156,7 @@ function renderWeatherCard(payload, city) {
   const saveBtn = document.getElementById("saveFavoriteBtn");
   saveBtn?.addEventListener("click", async () => {
     try {
-      await request("/favorites", {
+      await request("/api/favorites", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -178,7 +178,7 @@ function renderWeatherCard(payload, city) {
 
 function initWeatherPage() {
   if (!getToken()) {
-    window.location.href = "/login.html";
+    window.location.href = "/login";
     return;
   }
 
@@ -204,7 +204,8 @@ function initWeatherPage() {
 
     try {
       setMessage("weatherMessage", "Loading weather...");
-      const weather = await request(`/weather?${params.toString()}`);
+      history.replaceState(null, "", `/weather?${params.toString()}`);
+      const weather = await request(`/api/weather?${params.toString()}`);
       renderWeatherCard(weather, city);
       setMessage("weatherMessage", "Weather loaded.");
     } catch (error) {
@@ -246,7 +247,7 @@ function renderFavorites(items) {
       <article class="rounded-2xl bg-white p-4 shadow">
         <p class="text-lg font-semibold">${item.city}</p>
         <div class="mt-3 flex gap-2">
-          <a href="/index.html?city=${encodeURIComponent(item.city)}" class="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white">View Weather</a>
+          <a href="/weather?city=${encodeURIComponent(item.city)}" class="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white">View Weather</a>
           <button data-id="${item.id}" class="delete-favorite rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white">Delete</button>
         </div>
       </article>
@@ -258,7 +259,7 @@ function renderFavorites(items) {
     button.addEventListener("click", async () => {
       const id = button.getAttribute("data-id");
       try {
-        await request(`/favorites/${id}`, {
+        await request(`/api/favorites/${id}`, {
           method: "DELETE",
           headers: authHeader(),
         });
@@ -276,7 +277,7 @@ function renderFavorites(items) {
 
 async function loadFavorites() {
   try {
-    currentFavorites = await request("/favorites", {
+    currentFavorites = await request("/api/favorites", {
       headers: authHeader(),
     });
     renderFavorites(currentFavorites);
@@ -291,7 +292,7 @@ async function loadFavorites() {
 
 function initFavoritesPage() {
   if (!getToken()) {
-    window.location.href = "/login.html";
+    window.location.href = "/login";
     return;
   }
 

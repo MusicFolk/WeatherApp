@@ -15,7 +15,7 @@ tags:
   - name: Favorites
 
 paths:
-  /register:
+  /api/register:
     post:
       tags:
         - Auth
@@ -55,7 +55,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /login:
+  /api/login:
     post:
       tags:
         - Auth
@@ -95,7 +95,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /weather:
+  /api/weather:
     get:
       tags:
         - Weather
@@ -148,7 +148,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /favorites:
+  /api/favorites:
     get:
       tags:
         - Favorites
@@ -233,7 +233,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /favorites/{id}:
+  /api/favorites/{id}:
     delete:
       tags:
         - Favorites
