@@ -147,6 +147,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/auth-status:
+    get:
+      tags:
+        - Auth
+      summary: Check whether the current session is authenticated
+      description: |
+        Returns authentication status based on the authToken cookie.
+        This endpoint does not require authentication and always returns 200 with a boolean status.
+      responses:
+        "200":
+          description: Authentication status returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthStatusResponse"
+              examples:
+                authenticated:
+                  summary: Authenticated session
+                  value:
+                    authenticated: true
+                unauthenticated:
+                  summary: No valid session
+                  value:
+                    authenticated: false
+
   /api/weather:
     get:
       tags:
@@ -502,6 +527,15 @@ components:
           type: string
           example: Login successful
           description: Session cookie (authToken) has been set automatically
+
+    AuthStatusResponse:
+      type: object
+      required:
+        - authenticated
+      properties:
+        authenticated:
+          type: boolean
+          example: true
 
     WeatherResponse:
       type: object

@@ -110,4 +110,26 @@ router.post("/logout", (req, res) => {
   return res.json({ message: "Logout successful" });
 });
 
+router.get("/auth-status", (req, res) => {
+  const token = req.cookies?.authToken;
+
+  if (!token) {
+    return res.json({ authenticated: false });
+  }
+
+  try {
+    jwt.verify(token, process.env.JWT_SECRET);
+    return res.json({ authenticated: true });
+  } catch (error) {
+    res.clearCookie("authToken", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    });
+
+    return res.json({ authenticated: false });
+  }
+});
+
 module.exports = router;
