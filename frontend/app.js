@@ -27,7 +27,11 @@ function isCityAlreadyFavorite(city) {
 }
 
 function isAuthError(error) {
-  const message = error.message.toLowerCase();
+  if (error?.status === 401) {
+    return true;
+  }
+
+  const message = (error?.message || "").toLowerCase();
   return (
     message.includes("auth") ||
     message.includes("token") ||
@@ -42,7 +46,7 @@ async function logout() {
     // Always redirect even if the server session was already invalid.
   }
 
-  window.location.href = "/";
+  window.location.href = "/login";
 }
 
 async function request(url, options = {}) {
@@ -53,19 +57,38 @@ async function request(url, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || "Request failed");
+    const error = new Error(data.error || "Request failed");
+    error.status = response.status;
+    error.payload = data;
+    throw error;
   }
 
   return data;
 }
 
+async function initializeAuthState() {
+  try {
+    const authStatus = await request("/api/auth-status");
+    isAuthenticated = Boolean(authStatus?.authenticated);
+  } catch (error) {
+    isAuthenticated = false;
+  }
+}
+
 async function loadFavoritesState() {
+  if (!isAuthenticated) {
+    currentFavorites = [];
+    return;
+  }
+
   try {
     currentFavorites = await request("/api/favorites");
-    isAuthenticated = true;
   } catch (error) {
     currentFavorites = [];
-    isAuthenticated = !isAuthError(error);
+
+    if (isAuthError(error)) {
+      isAuthenticated = false;
+    }
   }
 }
 
@@ -355,8 +378,10 @@ function initFavoritesPage() {
   loadFavorites();
 }
 
-(function initApp() {
+(async function initApp() {
   const page = document.body.getAttribute("data-page");
+
+  await initializeAuthState();
 
   if (page === "auth") {
     initAuthPage();
